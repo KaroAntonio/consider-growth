@@ -85,7 +85,6 @@ function init_splash() {
 
 	$('#accessories-button').click(function(){
 		$('#splash').remove()	
-		publish_begin_session();
 	});
 
 	$('#plain-button').click(function(){
