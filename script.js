@@ -12,8 +12,11 @@ var p2;
 
 var update_buffer = 2000;
 
-var last_pub_1 = 0;
-var last_pub_2 = 0;  
+
+var meditation_time = 60000;
+var session_started = false;
+var session_start_time = 0;
+
 
 var dont_listen = false;
 
@@ -58,6 +61,12 @@ function draw() {
 		draw_deformed_circle(p2,width/2,height/2, 70)
 
 	//background('rgba(0%,0%,0%,0.001)');
+
+	if (session_started && Date.now()-session_start_time>meditation_time) {
+		session_started = false;
+		session_start_time = 0;
+		publish_end_session();
+	}
 
 	if (p1.ctr%1000 == 0) p1 = reset_params(p1.on)
 	if (p2.ctr%1000 == 0) p2 = reset_params(p2.on)
@@ -138,9 +147,17 @@ function parse_message(message) {
 			p2.on = false;	
 		}
 	}
+
+	if (p1.on && p2.on && !session_started) {
+		session_started = true;
+		session_start_time = Date.now();
+		publish_begin_session()
+	}
+
 	
 		
 }
+
 
 function publish(publishConfig) {
 
