@@ -25,6 +25,7 @@ function setup() {
 
 	init_splash();
 	init_pubnub();
+	
 
 	canvas = createCanvas(width, height).canvas
 	$(canvas).css({top:0})
@@ -35,8 +36,8 @@ function setup() {
 
 	//animate_line();	
 
-	p1 = reset_params()
-	p2 = reset_params()
+	p1 = reset_params(false)
+	p2 = reset_params(false)
 
 	background(0)
 }
@@ -51,15 +52,15 @@ function draw() {
 	//p1.speed = 1;
 	
 	// Turn these on and off to control who draws
-	if (dont_listen || Date.now() - last_pub_1 < update_buffer) 
+	if (dont_listen || p1.on) 
 		draw_deformed_circle(p1,width/2,height/2, 70)
-	if (dont_listen || Date.now() - last_pub_2 < update_buffer) 
+	if (dont_listen || p2.on) 
 		draw_deformed_circle(p2,width/2,height/2, 70)
 
 	//background('rgba(0%,0%,0%,0.001)');
 
-	if (p1.ctr%1000 == 0) p1 = reset_params()
-	if (p2.ctr%1000 == 0) p2 = reset_params()
+	if (p1.ctr%1000 == 0) p1 = reset_params(p1.on)
+	if (p2.ctr%1000 == 0) p2 = reset_params(p2.on)
 }
 
 function init_splash() {
@@ -75,6 +76,7 @@ function init_splash() {
 
 	$('#accessories-button').click(function(){
 		$('#splash').remove()	
+		publish_begin_session();
 	});
 
 	$('#plain-button').click(function(){
@@ -107,7 +109,7 @@ function init_pubnub() {
 			} 
 		},
 		message: function(message) {
-			update_last_pub(message)
+			parse_message(message)
 		}
 	})
 
@@ -116,9 +118,52 @@ function init_pubnub() {
 	});
 }
 
-function update_last_pub(message) {
-	if (message.channel == 'channel1') last_pub_1 = Date.now();
-	if (message.channel == 'channel2') last_pub_2 = Date.now();
+function parse_message(message) {
+	console.log(message)	
+	var msg = message.message;	
+	if (Object.keys(msg)[0] == 'karoMessage' && !msg.hasOwnProperty("clientMessage")){
+		if (msg['karoMessage'] == 1){
+			p1.on = true;	
+		}
+		if (msg['karoMessage'] == 0){
+			p1.on = false;	
+		}
+	}
+
+	if (Object.keys(msg)[0] == 'chrisMessage'){
+		if (msg['chrisMessage'] == 1){
+			p2.on = true;	
+		}
+		if (msg['chrisMessage'] == 0){
+			p2.on = false;	
+		}
+	}
+	
+		
+}
+
+function publish(publishConfig) {
+
+	pubnub.publish(publishConfig, function(status, response) {
+	    //console.log(status, response);
+	})
+}
+
+function publish_begin_session() {
+	console.log('publish')
+	var publishConfig = {
+	    channel : "channel1",
+	    message : {"karoMessage":4,"clientMessage":true}
+	}
+	publish(publishConfig);
+}
+
+function publish_end_session() {
+	var publishConfig = {
+	    channel : "channel1",
+	    message : {"karoMessage":5}
+	}
+	publish(publishConfig);
 }
 
 function draw_deformed_circle(p, cx, cy, n) {
@@ -126,8 +171,9 @@ function draw_deformed_circle(p, cx, cy, n) {
 	draw_loop(ctx, circle,1,p.ctr+p.ctr_off);
 }
 
-function reset_params() {
+function reset_params(on_state) {
 	return {
+		'on':on_state,
 		'arc_mode' : choice([0,1]),
 		'wave_mode' : choice(range(0,11,1)),
 		'speed' : range_val(.5,2),
