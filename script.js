@@ -26,7 +26,8 @@ function setup() {
 	width = window.innerWidth;
 	height = window.innerHeight;
 
-	init_splash();
+	dont_listen = true;
+	//init_splash();
 	init_pubnub();
 	
 
